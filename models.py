@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, Float, JSON
+from sqlalchemy import Column, Integer, String, Text, Float, JSON, ForeignKey, Boolean
+from sqlalchemy.orm import relationship
 from database import Base
 
 class Furniture(Base):
@@ -18,3 +19,26 @@ class Furniture(Base):
     materials = Column(String, nullable=True)
     weight = Column(Float, nullable=True)
     dimensions = Column(String, nullable=True)
+
+class Location(Base):
+    __tablename__ = "locations"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    address = Column(String)
+    latitude = Column(Float)
+    longitude = Column(Float)
+    is_warehouse = Column(Boolean, default=False)
+    
+class Inventory(Base):
+    __tablename__ = "inventory"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    furniture_id = Column(Integer, ForeignKey("furniture.id"))
+    location_id = Column(Integer, ForeignKey("locations.id"))
+    quantity = Column(Integer, default=1)
+    status = Column(String, default="In Storage") # e.g., "In Storage", "Staged", "In Transit"
+    
+    furniture = relationship("Furniture")
+    location = relationship("Location")
+
