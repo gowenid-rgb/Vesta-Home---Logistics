@@ -62,7 +62,7 @@ export default function MapDashboard() {
     }
   }
 
-  const handleRemoveFromRoute = (id: parseInt) => {
+  const handleRemoveFromRoute = (id: number) => {
     setRouteStops(routeStops.filter(s => s.id !== id))
     setRoutePlan(null)
   }
