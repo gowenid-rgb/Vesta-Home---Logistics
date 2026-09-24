@@ -36,13 +36,26 @@ export default function MapDashboard() {
   const [routeStops, setRouteStops] = useState<any[]>([])
   const [routePlan, setRoutePlan] = useState<any | null>(null)
   const [loadingPlan, setLoadingPlan] = useState(false)
+  
+  // Filters State
+  const [activeFilters, setActiveFilters] = useState<string[]>(['Warehouse', 'In Staging', 'Staged', 'Sold'])
 
   const fetchLocations = () => {
     setDebugError('Fetching...')
     axios.get(`${API_URL}/api/locations?t=${new Date().getTime()}`)
       .then(res => {
-        setLocations(res.data)
-        setVisibleLocations(res.data)
+        // Mock status for prototype based on ID
+        const processedLocations = res.data.map((loc: any) => {
+          let status = 'Warehouse'
+          if (!loc.is_warehouse) {
+            if (loc.id % 3 === 0) status = 'In Staging'
+            else if (loc.id % 3 === 1) status = 'Staged'
+            else status = 'Sold'
+          }
+          return { ...loc, status }
+        })
+        setLocations(processedLocations)
+        setVisibleLocations(processedLocations)
         setDebugError(`Success. Count: ${res.data.length}`)
       })
       .catch(err => {
@@ -55,23 +68,44 @@ export default function MapDashboard() {
     fetchLocations()
   }, [])
 
+  // Filter locations based on active filters
+  const filteredLocations = locations.filter(loc => activeFilters.includes(loc.status))
+
   const updateVisibleLocations = useCallback(() => {
-    if (mapRef.current && locations.length > 0) {
+    if (mapRef.current && filteredLocations.length > 0) {
       const bounds = mapRef.current.getBounds()
       if (bounds) {
-        const visible = locations.filter(loc => {
+        const visible = filteredLocations.filter(loc => {
           const latLng = new google.maps.LatLng(loc.latitude, loc.longitude)
           return bounds.contains(latLng)
         })
         setVisibleLocations(visible)
       }
+    } else if (filteredLocations.length === 0) {
+      setVisibleLocations([])
     }
-  }, [locations])
+  }, [filteredLocations])
 
   const handleMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map
     updateVisibleLocations()
   }, [updateVisibleLocations])
+
+  const toggleFilter = (filter: string) => {
+    setActiveFilters(prev => 
+      prev.includes(filter) 
+        ? prev.filter(f => f !== filter)
+        : [...prev, filter]
+    )
+  }
+
+  // Deselect if active filters change and hide the selected location
+  useEffect(() => {
+    if (selectedLocation && !activeFilters.includes(selectedLocation.status)) {
+      setSelectedLocation(null)
+    }
+  }, [activeFilters])
+
 
   const handleMarkerClick = (loc: any) => {
     setSelectedLocation(loc)
@@ -145,11 +179,26 @@ export default function MapDashboard() {
                       className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer flex items-center justify-between"
                     >
                       <div className="flex items-start gap-3">
-                        <div className={`mt-1 p-2 rounded-full ${loc.is_warehouse ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                        <div className={`mt-1 p-2 rounded-full ${
+                          loc.is_warehouse ? 'bg-blue-100 text-blue-600' : 
+                          loc.status === 'In Staging' ? 'bg-amber-100 text-amber-600' :
+                          loc.status === 'Sold' ? 'bg-purple-100 text-purple-600' :
+                          'bg-emerald-100 text-emerald-600'
+                        }`}>
                           {loc.is_warehouse ? <Warehouse size={20} /> : <Home size={20} />}
                         </div>
                         <div>
-                          <h4 className="font-bold text-gray-800">{loc.name}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-gray-800">{loc.name}</h4>
+                            <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded-full ${
+                              loc.is_warehouse ? 'bg-blue-100 text-blue-700' :
+                              loc.status === 'In Staging' ? 'bg-amber-100 text-amber-700' :
+                              loc.status === 'Sold' ? 'bg-purple-100 text-purple-700' :
+                              'bg-emerald-100 text-emerald-700'
+                            }`}>
+                              {loc.status}
+                            </span>
+                          </div>
                           <p className="text-xs text-gray-500 line-clamp-1 mt-1">{loc.address}</p>
                           <div className="mt-2 inline-block bg-gray-100 px-2 py-0.5 rounded text-[10px] font-semibold text-gray-600 uppercase">
                             {loc.inventory_count} Items
@@ -270,6 +319,36 @@ export default function MapDashboard() {
           <button onClick={fetchLocations} className="mt-2 bg-blue-500 text-white px-2 py-1 rounded">Retry Fetch</button>
         </div>
         
+        {/* Filter Toolbar */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-white shadow-lg rounded-full px-2 py-2 border border-gray-200 flex items-center gap-2">
+          {['Warehouse', 'In Staging', 'Staged', 'Sold'].map(filter => {
+            const isActive = activeFilters.includes(filter)
+            let colorClass = 'bg-gray-100 text-gray-600 border-transparent'
+            if (isActive) {
+              if (filter === 'Warehouse') colorClass = 'bg-blue-100 text-blue-700 border-blue-200'
+              else if (filter === 'In Staging') colorClass = 'bg-amber-100 text-amber-700 border-amber-200'
+              else if (filter === 'Staged') colorClass = 'bg-emerald-100 text-emerald-700 border-emerald-200'
+              else if (filter === 'Sold') colorClass = 'bg-purple-100 text-purple-700 border-purple-200'
+            }
+            return (
+              <button 
+                key={filter}
+                onClick={() => toggleFilter(filter)}
+                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${colorClass} hover:opacity-80`}
+              >
+                {isActive ? '✓ ' : ''}{filter}
+              </button>
+            )
+          })}
+          <div className="w-px h-6 bg-gray-300 mx-1"></div>
+          <button 
+            onClick={() => setActiveFilters(['Warehouse', 'In Staging', 'Staged', 'Sold'])}
+            className="px-4 py-1.5 rounded-full text-xs font-bold text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            Show All
+          </button>
+        </div>
+
         {isLoaded ? (
           <GoogleMap
             mapContainerStyle={containerStyle}
@@ -299,7 +378,7 @@ export default function MapDashboard() {
               ]
             }}
           >
-            {locations.map((loc) => (
+            {filteredLocations.map((loc) => (
               <Marker
                 key={loc.id}
                 position={{ lat: loc.latitude, lng: loc.longitude }}
@@ -307,6 +386,8 @@ export default function MapDashboard() {
                 icon={{
                   url: loc.is_warehouse 
                     ? 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                    : loc.status === 'In Staging' ? 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png'
+                    : loc.status === 'Sold' ? 'https://maps.google.com/mapfiles/ms/icons/purple-dot.png'
                     : 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
                 }}
               />
