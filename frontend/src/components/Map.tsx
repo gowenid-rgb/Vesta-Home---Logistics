@@ -28,17 +28,28 @@ export default function MapDashboard() {
   const [selectedLocation, setSelectedLocation] = useState<any | null>(null)
   const [inventory, setInventory] = useState<any[]>([])
   const [loadingInventory, setLoadingInventory] = useState(false)
+  const [debugError, setDebugError] = useState<string>('')
 
   // Route Builder State
   const [routeStops, setRouteStops] = useState<any[]>([])
   const [routePlan, setRoutePlan] = useState<any | null>(null)
   const [loadingPlan, setLoadingPlan] = useState(false)
 
-  useEffect(() => {
-    // Fetch locations from backend
+  const fetchLocations = () => {
+    setDebugError('Fetching...')
     axios.get(`${API_URL}/api/locations`)
-      .then(res => setLocations(res.data))
-      .catch(err => console.error("Failed to load locations", err))
+      .then(res => {
+        setLocations(res.data)
+        setDebugError(`Success. Count: ${res.data.length}`)
+      })
+      .catch(err => {
+        console.error("Failed to load locations", err)
+        setDebugError(`Error: ${err.message}. URL: ${API_URL}`)
+      })
+  }
+
+  useEffect(() => {
+    fetchLocations()
   }, [])
 
   const handleMarkerClick = (loc: any) => {
@@ -159,6 +170,14 @@ export default function MapDashboard() {
 
       {/* Map Area */}
       <div className="flex-1 h-full relative">
+        <div className="absolute top-4 left-4 z-50 bg-white/90 p-4 rounded shadow-lg border border-red-200 text-xs text-black max-w-sm font-mono">
+          <p className="font-bold text-red-600 mb-1">DEV DEBUG PANEL</p>
+          <p><strong>API_URL:</strong> {API_URL}</p>
+          <p><strong>LOCATIONS_COUNT:</strong> {locations.length}</p>
+          <p><strong>STATUS:</strong> {debugError}</p>
+          <button onClick={fetchLocations} className="mt-2 bg-blue-500 text-white px-2 py-1 rounded">Retry Fetch</button>
+        </div>
+        
         {isLoaded ? (
           <GoogleMap
             mapContainerStyle={containerStyle}
