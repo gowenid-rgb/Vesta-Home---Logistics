@@ -1,0 +1,24 @@
+I'm creating a software designed specifically for one business.  I'ts a furniture staging company that builds furniture, and fills homes that are currently for sale.  Buyers then purchase the home, and have the option of keeping some or all of the furniture with the purchase of the home.  
+
+The logistical challenge of the business is that the company has furniture literally scattered all over America.  Keeping track of what and where all the furniture is, is the biggest challenge.  prices, materials, quantities, what was sold, how much was sold etc...
+
+The company uses labor resources around the country to install, or remove furniture and store it in various warehouses around the country.  
+
+The app would have several key functions - in order of importance
+
+1.  utilize google maps API to track where and what furniture is located at each address
+2.  use a backend database to store furniture names, prices, materials, weight, and other key data
+3.  A Headquarters view - for the operations team to see a top level view of where furniture is located, is moving, has been sold, planning to be sold, in storage, needs to go to storage, etc...
+4.  An operator view (mobile app) that helps operators in the field know where to go, which furniture to pick up or deliver, which warehouse its stored at, the weights, images of the furniture etc...
+5. routing - if operators are visiting multiple homes, warehouses, and deliveries, headquarters could create a "route" that would create the fastest path required to complete today's task.  
+6. Truck selection - based on the route required, and the furniture involved, the app would use an AI api to calculate the minimum box truck dimensions - or selecting from the available truck inventory - which truck would be required to complete the route.  - and a suggestion of manpower required to execute the move. 
+
+The app will be built on GitHub and hosted on railway - using Google maps API and Gemini API for the brain
+
+this app is intended to start as a "visual mock up only" - i will plan to show the prototype app to the business stakeholders as a proposal, then possibly build the app to fully functional if they want to commission me.  
+
+Scrape - as a starting point for data - we will start by scraping the website - https://vestahome.com/ - pulling images, names, and data regarding each piece of furniture in their collection - and adding it to our database. - we can use this for use in the prototype.
+
+git remote add origin https://github.com/gowenid-rgb/Vesta-Home---Logistics.git
+git branch -M main
+git push -u origin main
