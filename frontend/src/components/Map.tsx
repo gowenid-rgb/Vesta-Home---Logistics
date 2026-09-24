@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api'
+import { GoogleMap, useJsApiLoader, Marker, DirectionsService, DirectionsRenderer } from '@react-google-maps/api'
 import axios from 'axios'
 import { MapPin, Warehouse, Home, Package, Route, Truck, Users, ArrowLeft } from 'lucide-react'
 
@@ -36,6 +36,7 @@ export default function MapDashboard() {
   const [routeStops, setRouteStops] = useState<any[]>([])
   const [routePlan, setRoutePlan] = useState<any | null>(null)
   const [loadingPlan, setLoadingPlan] = useState(false)
+  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null)
   
   // Filters State
   const [activeFilters, setActiveFilters] = useState<string[]>(['Warehouse', 'In Staging', 'Staged', 'Sold'])
@@ -135,12 +136,14 @@ export default function MapDashboard() {
     if (selectedLocation && !routeStops.find(s => s.id === selectedLocation.id)) {
       setRouteStops([...routeStops, selectedLocation])
       setRoutePlan(null) // reset plan when stops change
+      setDirections(null)
     }
   }
 
   const handleRemoveFromRoute = (id: number) => {
     setRouteStops(routeStops.filter(s => s.id !== id))
     setRoutePlan(null)
+    setDirections(null)
   }
 
   const handleGeneratePlan = () => {
@@ -428,6 +431,36 @@ export default function MapDashboard() {
                 }}
               />
             ))}
+
+            {routePlan && !directions && routeStops.length >= 2 && (
+              <DirectionsService
+                options={{
+                  origin: { lat: routeStops[0].latitude, lng: routeStops[0].longitude },
+                  destination: { lat: routeStops[routeStops.length - 1].latitude, lng: routeStops[routeStops.length - 1].longitude },
+                  waypoints: routeStops.slice(1, -1).map(stop => ({ location: { lat: stop.latitude, lng: stop.longitude }, stopover: true })),
+                  travelMode: google.maps.TravelMode.DRIVING
+                }}
+                callback={(res) => {
+                  if (res !== null && res.status === 'OK') {
+                    setDirections(res)
+                  }
+                }}
+              />
+            )}
+            
+            {directions && (
+              <DirectionsRenderer 
+                options={{
+                  directions: directions,
+                  suppressMarkers: true,
+                  polylineOptions: {
+                    strokeColor: '#4f46e5',
+                    strokeWeight: 6,
+                    strokeOpacity: 0.8
+                  }
+                }}
+              />
+            )}
           </GoogleMap>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-100">
