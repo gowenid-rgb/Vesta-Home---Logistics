@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -6,11 +7,17 @@ from typing import List
 from database import get_db, engine
 from models import Base, Furniture, Location, Inventory
 from pydantic import BaseModel
+import google.generativeai as genai
 
 # Ensure tables are created
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+# Configure Gemini
+GEMINI_API_KEY = os.environ.get("GEMINI_API")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,6 +26,61 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class RouteRequest(BaseModel):
+    location_ids: List[int]
+
+@app.post("/api/route-plan")
+def generate_route_plan(request: RouteRequest, db: Session = Depends(get_db)):
+    if not GEMINI_API_KEY:
+        return {"error": "GEMINI_API not configured"}
+        
+    locations = db.query(Location).filter(Location.id.in_(request.location_ids)).all()
+    
+    # Gather inventory for these locations to give context to Gemini
+    inventory_summary = []
+    for loc in locations:
+        inv = db.query(Inventory).filter(Inventory.location_id == loc.id).all()
+        items = [f"{i.quantity}x {i.furniture.name}" for i in inv]
+        inventory_summary.append(f"Stop: {loc.name} ({loc.address})\nItems to handle:\n" + "\n".join(items))
+        
+    prompt = f"""
+    You are an expert logistics AI for Vesta Home. 
+    A dispatcher is creating a route for the following stops and furniture items:
+    
+    {''.join(inventory_summary)}
+    
+    Based on the items listed, recommend the ideal box truck size (e.g. 10ft, 16ft, 26ft) and the number of movers required. 
+    Also provide a brief 1-2 sentence explanation for your recommendation.
+    Output your response in this exact format:
+    Truck: [Truck Size]
+    Movers: [Number]
+    Reason: [Explanation]
+    """
+    
+    try:
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        response = model.generate_content(prompt)
+        text = response.text
+        
+        # Parse the response loosely
+        lines = text.split('\n')
+        truck = "16ft Box Truck"
+        movers = "2 Movers"
+        reason = "Standard allocation based on typical furniture volume."
+        
+        for line in lines:
+            if line.startswith("Truck:"): truck = line.replace("Truck:", "").strip()
+            if line.startswith("Movers:"): movers = line.replace("Movers:", "").strip()
+            if line.startswith("Reason:"): reason = line.replace("Reason:", "").strip()
+            
+        return {
+            "truck": truck,
+            "movers": movers,
+            "reason": reason
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.get("/")
 def read_root():
