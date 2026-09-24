@@ -4,17 +4,36 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
-from database import get_db, engine
+from database import get_db, engine, SessionLocal
 from models import Base, Furniture, Location, Inventory
 from pydantic import BaseModel
 import google.generativeai as genai
+import subprocess
+from contextlib import asynccontextmanager
 
 # Ensure tables are created
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Auto-seed database on startup if empty
+    db = SessionLocal()
+    furniture_count = db.query(Furniture).count()
+    if furniture_count == 0:
+        print("Database is empty! Auto-running scraper and mock data generator...")
+        try:
+            subprocess.run(["python", "scraper.py"], check=True)
+            subprocess.run(["python", "mock_data.py"], check=True)
+            print("Auto-seed complete!")
+        except Exception as e:
+            print(f"Auto-seed failed: {e}")
+    db.close()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 # Configure Gemini
+
 GEMINI_API_KEY = os.environ.get("GEMINI_API")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
