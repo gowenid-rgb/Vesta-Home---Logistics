@@ -152,11 +152,17 @@ export default function MapDashboard() {
     const location_ids = routeStops.map(s => s.id)
     axios.post(`${API_URL}/api/route-plan`, { location_ids })
       .then(res => {
-        setRoutePlan(res.data)
+        if (res.data.error) {
+          alert(`AI Error: ${res.data.error}`)
+          setRoutePlan(null)
+        } else {
+          setRoutePlan(res.data)
+        }
         setLoadingPlan(false)
       })
       .catch(err => {
         console.error("Failed to generate plan", err)
+        alert(`Request Error: ${err.message}`)
         setLoadingPlan(false)
       })
   }

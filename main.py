@@ -95,7 +95,7 @@ def generate_route_plan(request: RouteRequest, db: Session = Depends(get_db)):
     """
     
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-pro")
         response = model.generate_content(prompt)
         text = response.text
         
