@@ -37,7 +37,7 @@ export default function MapDashboard() {
 
   const fetchLocations = () => {
     setDebugError('Fetching...')
-    axios.get(`${API_URL}/api/locations`)
+    axios.get(`${API_URL}/api/locations?t=${new Date().getTime()}`)
       .then(res => {
         setLocations(res.data)
         setDebugError(`Success. Count: ${res.data.length}`)
