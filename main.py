@@ -112,11 +112,14 @@ def get_furniture(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 
 @app.get("/api/locations")
 def get_locations(db: Session = Depends(get_db)):
-    # Get locations with a count of inventory items
+    # Get locations with a count of inventory items (excluding zero-price dummy products)
     locations = db.query(Location).all()
     results = []
     for loc in locations:
-        inventory_count = db.query(func.sum(Inventory.quantity)).filter(Inventory.location_id == loc.id).scalar() or 0
+        inventory_count = db.query(func.sum(Inventory.quantity))\
+            .join(Furniture)\
+            .filter(Inventory.location_id == loc.id, Furniture.price > 0)\
+            .scalar() or 0
         results.append({
             "id": loc.id,
             "name": loc.name,
@@ -130,7 +133,10 @@ def get_locations(db: Session = Depends(get_db)):
 
 @app.get("/api/locations/{location_id}/inventory")
 def get_location_inventory(location_id: int, db: Session = Depends(get_db)):
-    inventory = db.query(Inventory).filter(Inventory.location_id == location_id).all()
+    inventory = db.query(Inventory)\
+        .join(Furniture)\
+        .filter(Inventory.location_id == location_id, Furniture.price > 0)\
+        .all()
     results = []
     for inv in inventory:
         results.append({
