@@ -193,8 +193,8 @@ export default function MapDashboard() {
                 onClick={() => handleMarkerClick(loc)}
                 icon={{
                   url: loc.is_warehouse 
-                    ? 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-                    : 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                    ? 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                    : 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
                 }}
               />
             ))}
