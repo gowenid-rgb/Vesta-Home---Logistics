@@ -440,9 +440,9 @@ export default function MapDashboard() {
                   waypoints: routeStops.slice(1, -1).map(stop => ({ location: { lat: stop.latitude, lng: stop.longitude }, stopover: true })),
                   travelMode: google.maps.TravelMode.DRIVING
                 }}
-                callback={(res) => {
-                  if (res !== null && res.status === 'OK') {
-                    setDirections(res)
+                callback={(result, status) => {
+                  if (status === 'OK' && result) {
+                    setDirections(result)
                   }
                 }}
               />
