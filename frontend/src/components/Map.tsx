@@ -106,6 +106,16 @@ export default function MapDashboard() {
     }
   }, [activeFilters])
 
+  // Zoom to selected location
+  useEffect(() => {
+    if (selectedLocation && mapRef.current) {
+      mapRef.current.panTo({ lat: selectedLocation.latitude, lng: selectedLocation.longitude })
+      mapRef.current.setZoom(16)
+    } else if (!selectedLocation && mapRef.current) {
+      mapRef.current.panTo(center)
+      mapRef.current.setZoom(11)
+    }
+  }, [selectedLocation])
 
   const handleMarkerClick = (loc: any) => {
     setSelectedLocation(loc)
@@ -378,7 +388,7 @@ export default function MapDashboard() {
               ]
             }}
           >
-            {filteredLocations.map((loc) => (
+            {(selectedLocation ? [selectedLocation] : filteredLocations).map((loc) => (
               <Marker
                 key={loc.id}
                 position={{ lat: loc.latitude, lng: loc.longitude }}
