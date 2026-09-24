@@ -60,20 +60,37 @@ def generate_route_plan(request: RouteRequest, db: Session = Depends(get_db)):
     inventory_summary = []
     for loc in locations:
         inv = db.query(Inventory).filter(Inventory.location_id == loc.id).all()
-        items = [f"{i.quantity}x {i.furniture.name}" for i in inv]
-        inventory_summary.append(f"Stop: {loc.name} ({loc.address})\nItems to handle:\n" + "\n".join(items))
+        # Filter for action items
+        action_items = []
+        for i in inv:
+            if loc.is_warehouse:
+                action_items.append(f"{i.quantity}x {i.furniture.name} (Warehouse Stock)")
+            elif i.status in ["Incoming", "Outgoing"]:
+                action_items.append(f"{i.quantity}x {i.furniture.name} [{i.status.upper()}]")
+        
+        if action_items:
+            inventory_summary.append(f"Stop: {loc.name} ({loc.address})\nItems to handle:\n" + "\n".join(action_items))
+        else:
+            inventory_summary.append(f"Stop: {loc.name} ({loc.address})\nNo action items required.")
         
     prompt = f"""
     You are an expert logistics AI for Vesta Home. 
-    A dispatcher is creating a route for the following stops and furniture items:
+    A dispatcher is creating a route for the following stops and furniture items in Los Angeles:
     
     {''.join(inventory_summary)}
     
-    Based on the items listed, recommend the ideal box truck size (e.g. 10ft, 16ft, 26ft) and the number of movers required. 
-    Also provide a brief 1-2 sentence explanation for your recommendation.
+    Based on the items listed (specifically looking at INCOMING and OUTGOING items) and the addresses:
+    1. Recommend the ideal box truck size (e.g. 10ft, 16ft, 26ft).
+    2. Recommend the number of movers required.
+    3. Estimate the total driving distance (e.g., "45 miles").
+    4. Estimate the total driving time in LA traffic (e.g., "2h 15m").
+    5. Provide a brief 1-2 sentence explanation for your recommendation.
+    
     Output your response in this exact format:
     Truck: [Truck Size]
     Movers: [Number]
+    Distance: [Distance]
+    Time: [Time]
     Reason: [Explanation]
     """
     
@@ -86,16 +103,22 @@ def generate_route_plan(request: RouteRequest, db: Session = Depends(get_db)):
         lines = text.split('\n')
         truck = "16ft Box Truck"
         movers = "2 Movers"
+        distance = "TBD"
+        time = "TBD"
         reason = "Standard allocation based on typical furniture volume."
         
         for line in lines:
             if line.startswith("Truck:"): truck = line.replace("Truck:", "").strip()
             if line.startswith("Movers:"): movers = line.replace("Movers:", "").strip()
+            if line.startswith("Distance:"): distance = line.replace("Distance:", "").strip()
+            if line.startswith("Time:"): time = line.replace("Time:", "").strip()
             if line.startswith("Reason:"): reason = line.replace("Reason:", "").strip()
             
         return {
             "truck": truck,
             "movers": movers,
+            "distance": distance,
+            "time": time,
             "reason": reason
         }
     except Exception as e:

@@ -476,28 +476,54 @@ export default function MapDashboard() {
         {/* AI Action Area */}
         <div className="p-6 bg-white border-t border-gray-200 shrink-0 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
           {routePlan ? (
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-5 mb-4 shadow-sm relative overflow-hidden">
-              <div className="absolute -right-4 -top-4 opacity-5">
-                <Truck size={100} />
-              </div>
-              <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
-                ✨ Gemini AI Logistics
-              </h3>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-white/80 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center border border-indigo-50 backdrop-blur-sm">
-                  <Truck className="text-indigo-600 mb-1" size={24} />
-                  <span className="text-[10px] text-gray-500 uppercase font-bold">Recommended</span>
-                  <span className="font-bold text-gray-900 text-center text-sm mt-1">{routePlan.truck}</span>
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100 rounded-xl p-5 mb-4 shadow-sm relative overflow-hidden">
+                <div className="absolute -right-4 -top-4 opacity-5">
+                  <Truck size={100} />
                 </div>
-                <div className="bg-white/80 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center border border-indigo-50 backdrop-blur-sm">
-                  <Users className="text-indigo-600 mb-1" size={24} />
-                  <span className="text-[10px] text-gray-500 uppercase font-bold">Manpower</span>
-                  <span className="font-bold text-gray-900 text-center text-sm mt-1">{routePlan.movers}</span>
+                <h3 className="font-bold text-indigo-900 mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                  ✨ Gemini AI Logistics
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="bg-white/80 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center border border-indigo-50 backdrop-blur-sm">
+                    <Truck className="text-indigo-600 mb-1" size={20} />
+                    <span className="text-[9px] text-gray-500 uppercase font-bold">Recommended</span>
+                    <span className="font-bold text-gray-900 text-center text-xs mt-1">{routePlan.truck}</span>
+                  </div>
+                  <div className="bg-white/80 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center border border-indigo-50 backdrop-blur-sm">
+                    <Users className="text-indigo-600 mb-1" size={20} />
+                    <span className="text-[9px] text-gray-500 uppercase font-bold">Manpower</span>
+                    <span className="font-bold text-gray-900 text-center text-xs mt-1">{routePlan.movers}</span>
+                  </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-white/80 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center border border-indigo-50 backdrop-blur-sm">
+                    <span className="text-[9px] text-gray-500 uppercase font-bold mb-1">Distance</span>
+                    <span className="font-bold text-indigo-900 text-center text-sm">{routePlan.distance}</span>
+                  </div>
+                  <div className="bg-white/80 p-3 rounded-lg shadow-sm flex flex-col items-center justify-center border border-indigo-50 backdrop-blur-sm">
+                    <span className="text-[9px] text-gray-500 uppercase font-bold mb-1">Est. Time</span>
+                    <span className="font-bold text-indigo-900 text-center text-sm">{routePlan.time}</span>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-indigo-800 italic leading-relaxed font-medium bg-white/50 p-3 rounded-lg border border-indigo-50">
+                  "{routePlan.reason}"
+                </p>
               </div>
-              <p className="text-xs text-indigo-800 italic leading-relaxed font-medium bg-white/50 p-3 rounded-lg border border-indigo-50">
-                "{routePlan.reason}"
-              </p>
+
+              <button 
+                onClick={() => {
+                  const link = `${window.location.origin}/operator?stops=${routeStops.map(s => s.id).join(',')}`
+                  navigator.clipboard.writeText(link)
+                  alert("Trip Link Copied! Ready to paste to the operator.")
+                }}
+                className="w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+              >
+                Copy Trip Link for Operator
+              </button>
             </div>
           ) : (
             <button 
