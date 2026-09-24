@@ -152,4 +152,14 @@ def get_location_inventory(location_id: int, db: Session = Depends(get_db)):
         })
     return results
 
+class StatusUpdate(BaseModel):
+    status: str
 
+@app.patch("/api/inventory/{inventory_id}/status")
+def update_inventory_status(inventory_id: int, status_update: StatusUpdate, db: Session = Depends(get_db)):
+    inventory = db.query(Inventory).filter(Inventory.id == inventory_id).first()
+    if not inventory:
+        return {"error": "Not found"}
+    inventory.status = status_update.status
+    db.commit()
+    return {"success": True, "status": inventory.status}

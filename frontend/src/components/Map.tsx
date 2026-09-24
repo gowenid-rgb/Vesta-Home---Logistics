@@ -158,6 +158,20 @@ export default function MapDashboard() {
       })
   }
 
+  const updateItemStatus = (inventoryId: number, newStatus: string) => {
+    // Optimistic UI update
+    setInventory(prev => prev.map(item => 
+      item.id === inventoryId ? { ...item, status: newStatus } : item
+    ))
+    
+    // API Call
+    axios.patch(`${API_URL}/api/inventory/${inventoryId}/status`, { status: newStatus })
+      .catch(err => {
+        console.error("Failed to update status", err)
+        // Revert on failure could go here
+      })
+  }
+
   // Calculate Aggregates for selected location
   const totalValue = inventory.reduce((sum, item) => sum + ((item.furniture.price || 0) * item.quantity), 0)
   // Simulate weight if not present in DB (e.g. 10 lbs per $100 of value, just for the prototype)
@@ -296,11 +310,23 @@ export default function MapDashboard() {
                           </div>
                           <div className="flex flex-col justify-between flex-1 py-1">
                             <div>
-                              <p className="font-bold text-sm text-gray-900 leading-tight mb-1">{item.furniture.name}</p>
-                              <div className="flex items-center gap-2">
-                                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${item.status === 'Staged' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                                  {item.status}
-                                </span>
+                              <p className="font-bold text-sm text-gray-900 leading-tight mb-2">{item.furniture.name}</p>
+                              <div className="flex bg-gray-100 rounded-md p-1 gap-1 w-max">
+                                {['Staged', 'Outgoing', 'Incoming'].map(status => (
+                                  <button
+                                    key={status}
+                                    onClick={() => updateItemStatus(item.id, status)}
+                                    className={`px-2 py-1 text-[9px] font-bold uppercase rounded-sm transition-colors ${
+                                      item.status === status 
+                                        ? status === 'Staged' ? 'bg-emerald-100 text-emerald-800 shadow-sm' 
+                                          : status === 'Outgoing' ? 'bg-amber-100 text-amber-800 shadow-sm'
+                                          : 'bg-blue-100 text-blue-800 shadow-sm'
+                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                  >
+                                    {status}
+                                  </button>
+                                ))}
                               </div>
                             </div>
                             <div className="flex items-end justify-between mt-2">
